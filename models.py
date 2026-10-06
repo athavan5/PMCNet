@@ -2,16 +2,22 @@ import os
 import cv2
 import math
 import random
-import keras
 import numpy as np
-import keras.backend as K
-from keras.models import *
-from keras.layers import *
-from keras.optimizers import *
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
-from keras.applications.mobilenet import MobileNet
-from keras.applications.resnet50 import ResNet50
-from keras.applications.vgg16 import VGG16
+import tensorflow as tf
+from keras.backend import int_shape
+from tensorflow.keras.layers import *
+from tensorflow.keras.models import *
+import tensorflow.keras.backend as K
+
+# NOTE: Old imports from older keras version
+# from tensorflow.keras import backend as K
+# from tensorflow.keras.models import *
+# from tensorflow.keras.layers import *
+# from tensorflow.keras.optimizers import *
+# from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+# from tensorflow.keras.applications.mobilenet import MobileNet
+# from tensorflow.keras.applications.resnet50 import ResNet50
+# from tensorflow.keras.applications.vgg16 import VGG16
 
 from utils import *
 from efficientnet import *
@@ -42,14 +48,14 @@ def skip_block(de,en):
     
 def DAB_block(concat):  ## CA+SA+PA
     # CA
-    shape = K.int_shape(concat)
+    shape = tf.keras.backend.int_shape(concat)
     x = AveragePooling2D(pool_size=(shape[1], shape[2]), padding='same') (concat)
     x = Dense(shape[3]) (x)
     score_c = Activation('sigmoid') (x)
     CA = Multiply() ([concat,score_c])
     
     # SA
-    s_avg = Lambda(lambda x: K.mean(x, axis=-1, keepdims=True)) (concat)
+    s_avg = Lambda(lambda x: tf.reduce_mean(x, axis=-1, keepdims=True)) (concat)
     score_s = Activation('sigmoid') (s_avg)
     SA = Multiply() ([concat,score_s])
     
@@ -62,10 +68,11 @@ def DAB_block(concat):  ## CA+SA+PA
     return out
 
 def PFF_3(pre,cur,nex):
+    # Use static shape for Conv2D filters; tf.shape(cur) is symbolic and breaks graph build.
     shape = K.int_shape(cur)
-    
+
     down = DepthwiseConv2D(2, strides = 2, padding = 'same') (pre)
-    down =  Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(down)
+    down = Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(down)
     
     up =  Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(nex)
     up = UpSampling2D(size=(2, 2),interpolation='bilinear')(up)
@@ -82,13 +89,13 @@ def PFF_3(pre,cur,nex):
     
 def PFF_2_pre(cur,nex):
     shape = K.int_shape(cur)
-    up =  Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(nex)
+    up = Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(nex)
     up = UpSampling2D(size=(2, 2),interpolation='bilinear')(up)
     mul = Multiply() ([cur,up])
    
     concat = concatenate([cur,mul], axis = -1)
     att = DAB_block(concat)
-    x =  Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(att)
+    x = Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(att)
     x = LeakyReLU(alpha=0.0)  (x)
     
     return x 
@@ -96,12 +103,12 @@ def PFF_2_pre(cur,nex):
 def PFF_2_nex(pre,cur):
     shape = K.int_shape(cur)
     down = DepthwiseConv2D(2, strides = 2, padding = 'same') (pre)
-    down =  Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(down)
+    down = Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(down)
     mul = Multiply() ([down,cur])
 
     concat = concatenate([cur,mul], axis = -1)
     att = DAB_block(concat)
-    x =  Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(att)
+    x = Conv2D(shape[3], (1, 1), strides = 1, padding = 'same')(att)
     x = LeakyReLU(alpha=0.0)  (x)
     return x
     
@@ -115,8 +122,8 @@ def PMCNet(img_rows, img_cols, color_type, num_class):
     conv5_1 = base_model.get_layer("swish_34").output
     
     conv5_1_Att_PFF = PFF_2_nex(conv4_1,conv5_1)
-    conv4_1_Att_PFF = PFF_3 (conv3_1,conv4_1,conv5_1)
-    conv3_1_Att_PFF = PFF_3 (conv2_1,conv3_1,conv4_1)
+    conv4_1_Att_PFF = PFF_3(conv3_1,conv4_1,conv5_1)
+    conv3_1_Att_PFF = PFF_3(conv2_1,conv3_1,conv4_1)
     conv2_1_Att_PFF = PFF_2_pre(conv2_1,conv3_1)
     
     conv2_1_Att_PFF = add([conv2_1_Att_PFF,conv2_1])
@@ -138,8 +145,20 @@ def PMCNet(img_rows, img_cols, color_type, num_class):
         
     out = Upsample_conv(concat2, nb_filter[0])
     out = conv_block(out, nb_filter[0])
-    out = Conv2D(num_class, (1, 1), activation='softmax', padding='same')(out)   
-    model = Model(base_model.input,out)
+    # Decoder ends at the same stride as the shallowest skip (often H/2×W/2 for
+    # non-power-of-two inputs like 960×1440). Resize features to input size so
+    # loss/metrics match full-res masks from the data generator.
+    inp = base_model.input
+    out = Lambda(
+        lambda pair: tf.image.resize(
+            pair[0],
+            size=tf.shape(pair[1])[1:3],
+            method='bilinear',
+        ),
+        name='resize_decoder_to_input',
+    )([out, inp])
+    out = Conv2D(num_class, (1, 1), activation='softmax', padding='same')(out)
+    model = Model(base_model.input, out)
     model.summary()
     return model
   

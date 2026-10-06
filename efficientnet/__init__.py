@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from .model import *
 from .preprocessing import center_crop_and_resize, preprocess_input

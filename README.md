@@ -16,6 +16,9 @@ pillow 7.0.0
 
 opencv-python 4.1.0
 
+## Newer
+python 3.11
+pip install -r requirements.txt
 
 ## Usage
 

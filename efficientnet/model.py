@@ -30,10 +30,10 @@ import six
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
-import keras.backend as K
-import keras.models as KM
-import keras.layers as KL
-from keras.utils import get_file
+from tensorflow.keras import backend as K
+from tensorflow.keras import models as KM
+from tensorflow.keras import layers as KL
+from tensorflow.keras.utils import get_file
 
 from .layers import Swish, DropConnect
 from .params import get_model_params, IMAGENET_WEIGHTS
@@ -202,7 +202,13 @@ def MBConvBlock(block_args, global_params, drop_connect_rate=None):
 
 
 def EfficientNet(
-    input_shape, block_args_list, global_params, input_tensor=None, include_top=True, pooling=None
+    input_shape,
+    block_args_list,
+    global_params,
+    input_tensor=None,
+    include_top=True,
+    pooling=None,
+    name=None,
 ):
     batch_norm_momentum = global_params.batch_norm_momentum
     batch_norm_epsilon = global_params.batch_norm_epsilon
@@ -294,7 +300,7 @@ def EfficientNet(
             x = KL.GlobalMaxPooling2D(data_format=global_params.data_format)(x)
 
     outputs = x
-    model = KM.Model(inputs, outputs)
+    model = KM.Model(inputs, outputs, name=name)
 
     return model
 
@@ -367,9 +373,8 @@ def _get_model_by_name(
         input_tensor=input_tensor,
         include_top=include_top,
         pooling=pooling,
+        name=model_name,
     )
-
-    model.name = model_name
 
     if weights:
         if not include_top:

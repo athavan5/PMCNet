@@ -13,9 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 import tensorflow as tf
-import keras.backend as K
-import keras.layers as KL
-from keras.utils.generic_utils import get_custom_objects
+from tensorflow.keras import backend as K
+from tensorflow.keras import layers as KL
+from tensorflow.keras.utils import get_custom_objects
 
 
 class Swish(KL.Layer):
@@ -35,11 +35,11 @@ class DropConnect(KL.Layer):
             # Compute drop_connect tensor
             batch_size = tf.shape(inputs)[0]
             random_tensor = keep_prob
-            random_tensor += tf.random_uniform(
+            random_tensor += tf.random.uniform(
                 [batch_size, 1, 1, 1], dtype=inputs.dtype
             )
             binary_tensor = tf.floor(random_tensor)
-            output = tf.div(inputs, keep_prob) * binary_tensor
+            output = tf.divide(inputs, keep_prob) * binary_tensor
             return output
 
         return K.in_train_phase(drop_connect, inputs, training=training)

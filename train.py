@@ -46,15 +46,15 @@ def parse_args():
 
 def get_dataset_config(dataset_type, dataset_name):
     if dataset_type == 'DDR':
-        return 1024, 1024, f"./data/{dataset_name}/train", f"./data/{dataset_name}/val"
+        return 1024, 1024, f"../data/{dataset_name}/train", f"../data/{dataset_name}/val"
     if dataset_type == 'IDRiD':
-        return 960, 1440, f"./data/{dataset_name}/train", f"./data/{dataset_name}/val"
+        return 960, 1440, f"../data/{dataset_name}/train", f"../data/{dataset_name}/val"
     if dataset_type == 'IDRiD_w_PBDA': # TODO: Check how sizing works for this dataset
-        return 1024, 1024, f"./data/{dataset_name}/train", f"./data/{dataset_name}/val"
+        return 1024, 1024, f"../data/{dataset_name}/train", f"../data/{dataset_name}/val"
     if dataset_type == 'MAPLES-DR': # TODO: Check how sizing works for this dataset
-        return 1024, 1024, f"./data/{dataset_name}/train", f"./data/{dataset_name}/val"
+        return 1024, 1024, f"../data/{dataset_name}/train", f"../data/{dataset_name}/val"
     if dataset_type == 'epoch':
-        return 960, 1440, f"./data/{dataset_name}/train", f"./data/{dataset_name}/valid"
+        return 960, 1440, f"../data/{dataset_name}/train", f"../data/{dataset_name}/valid"
     raise ValueError(f"Unsupported dataset: {dataset_type}")
 
 def get_optimizer(name, learning_rate):

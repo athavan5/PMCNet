@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=train_PMCNet_idrid-maples-eyepacs-1440x960
+#SBATCH --job-name=train_PMCNet_idrid-1440x960-seed-87 
 #SBATCH --account=st-ipor-1-gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -7,9 +7,9 @@
 #SBATCH --mem=64G
 #SBATCH --time=72:00:00
 #SBATCH --gpus=2
-#SBATCH --output=/scratch/st-ipor-1/rlmacdou/PMCNet/hpc_logs/%x-%j.out
-#SBATCH --error=/scratch/st-ipor-1/rlmacdou/PMCNet/hpc_logs/%x-%j.err
-#SBATCH --mail-user=rlmacdou@student.ubc.ca
+#SBATCH --output=/scratch/st-ipor-1/lwqz/PMCNet/hpc_logs/%x-%j.out
+#SBATCH --error=/scratch/st-ipor-1/lwqz/PMCNet/hpc_logs/%x-%j.err
+#SBATCH --mail-user=lwqz@student.ubc.ca
 #SBATCH --mail-type=FAIL,END               
 
 set -euo pipefail
@@ -34,7 +34,7 @@ do
 done
 
 # Navigate to the job's working directory
-REPO_DIR="/scratch/st-ipor-1/rlmacdou/PMCNet"
+REPO_DIR="/scratch/st-ipor-1/lwqz/PMCNet"
 cd "${REPO_DIR}"
 
 # Conda environment setup
@@ -102,8 +102,8 @@ PY
 # Verify TensorFlow sees the GPU in this exact job environment
 "$ENV_PREFIX/bin/python" -c "import tensorflow as tf; print('TF version:', tf.__version__); print('built_with_cuda:', tf.test.is_built_with_cuda()); print('GPUs:', tf.config.list_physical_devices('GPU'))"
 
-DATA_DIR_NAME="idrid-maples-eyepacs-1440x960"
-USE_WANDB=1
+DATA_DIR_NAME="idrid_1440x960/split_seed_87"
+USE_WANDB=0
 # Add your executable commands here
 "$ENV_PREFIX/bin/python" train.py \
   --epochs 120 \
@@ -112,5 +112,5 @@ USE_WANDB=1
   --workers 1 \
   --dataset-name ${DATA_DIR_NAME} \
   --dataset-type IDRiD \
-  --output-dir /arc/project/st-ipor-1/rlmacdou/PMCNet/weights/${DATA_DIR_NAME} \
+  --output-dir /arc/project/st-ipor-1/lwqz/PMCNet/weights/${DATA_DIR_NAME} \. 
   --use-wandb ${USE_WANDB}

@@ -112,5 +112,5 @@ USE_WANDB=0
   --workers 1 \
   --dataset-name ${DATA_DIR_NAME} \
   --dataset-type IDRiD \
-  --output-dir /arc/project/st-ipor-1/lwqz/PMCNet/weights/${DATA_DIR_NAME} \. 
+  --output-dir /arc/project/st-ipor-1/lwqz/PMCNet/weights/${DATA_DIR_NAME} \
   --use-wandb ${USE_WANDB}
